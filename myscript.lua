@@ -203,7 +203,32 @@ Section:NewTextBox("Max Jumps", "", function(txt)
 end)
 
 -- =========================
--- HIGHLIGHT PLAYERS (GREEN)
+-- DAMAGE PROTECTION
+
+local protectEnabled = false
+local hpConn
+
+local function applyProtection(char)
+    local humanoid = char:WaitForChild("Humanoid")
+
+    if hpConn then hpConn:Disconnect() hpConn=nil end
+
+    hpConn = humanoid.HealthChanged:Connect(function()
+        if protectEnabled then
+            humanoid.Health = humanoid.MaxHealth
+        end
+    end)
+end
+
+player.CharacterAdded:Connect(applyProtection)
+if player.Character then applyProtection(player.Character) end
+
+Section:NewToggle("Damage Protection", "", function(state)
+    protectEnabled = state
+end)
+
+-- =========================
+-- HIGHLIGHT PLAYERS
 
 local highlightEnabled = false
 local highlights = {}
@@ -227,14 +252,11 @@ local function createHighlight(plr)
         highlights[plr] = hl
     end
 
-    if plr.Character then
-        onChar(plr.Character)
-    end
-
+    if plr.Character then onChar(plr.Character) end
     plr.CharacterAdded:Connect(onChar)
 end
 
-for _, p in ipairs(Players:GetPlayers()) do
+for _,p in ipairs(Players:GetPlayers()) do
     createHighlight(p)
 end
 
@@ -244,12 +266,12 @@ Section:NewToggle("Highlight Players", "", function(state)
     highlightEnabled = state
 
     if not state then
-        for _, hl in pairs(highlights) do
+        for _,hl in pairs(highlights) do
             hl:Destroy()
         end
         highlights = {}
     else
-        for _, p in ipairs(Players:GetPlayers()) do
+        for _,p in ipairs(Players:GetPlayers()) do
             if p.Character then
                 createHighlight(p)
             end
