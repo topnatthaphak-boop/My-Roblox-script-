@@ -11,6 +11,7 @@ local Tab = Window:CreateTab("Main")
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -55,17 +56,17 @@ Tab:CreateToggle({
     CurrentValue = false,
     Callback = function(v)
         god = v
-
-        RunService.Heartbeat:Connect(function()
-            if god then
-                local h = hum()
-                if h and h.Health < h.MaxHealth then
-                    h.Health = h.MaxHealth
-                end
-            end
-        end)
     end
 })
+
+RunService.Heartbeat:Connect(function()
+    if god then
+        local h = hum()
+        if h and h.Health < h.MaxHealth then
+            h.Health = h.MaxHealth
+        end
+    end
+end)
 
 -- =========================
 -- FLY (stable)
@@ -134,28 +135,31 @@ Tab:CreateToggle({
 })
 
 -- =========================
--- 🧲 CLICK TP TO PLAYER (MERGED VERSION)
+-- 🧲 CLICK TP (FIXED + STABLE VERSION)
+
 local targetPlayer = nil
 local clickTP = false
+local canTP = true
 
--- Dropdown เลือกผู้เล่น
-Tab:CreateDropdown({
-    Name = "Select Player",
-    Options = (function()
-        local t = {}
-        for _,p in pairs(Players:GetPlayers()) do
-            if p ~= player then
-                table.insert(t, p.Name)
-            end
+local function getPlayerList()
+    local t = {}
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= player then
+            table.insert(t, p.Name)
         end
-        return t
-    end)(),
+    end
+    return t
+end
+
+local dropdown = Tab:CreateDropdown({
+    Name = "Select Player",
+    Options = getPlayerList(),
+    CurrentOption = "",
     Callback = function(v)
         targetPlayer = Players:FindFirstChild(v)
     end
 })
 
--- Toggle เปิดระบบ
 Tab:CreateToggle({
     Name = "Click TP to Player",
     CurrentValue = false,
@@ -164,16 +168,29 @@ Tab:CreateToggle({
     end
 })
 
--- คลิกแล้ววาร์ปไปผู้เล่น
-mouse.Button1Down:Connect(function()
+-- กัน bug + delay กันวาร์ปรัว
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
     if not clickTP then return end
-    if not targetPlayer then return end
-    if not targetPlayer.Character then return end
+    if not canTP then return end
 
-    local myHRP = hrp()
-    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if not targetPlayer then return end
+        if not targetPlayer.Character then return end
 
-    if myHRP and targetHRP then
-        myHRP.CFrame = targetHRP.CFrame + Vector3.new(2,0,2)
+        local myChar = char()
+        local targetChar = targetPlayer.Character
+
+        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+
+        if myHRP and targetHRP then
+            canTP = false
+
+            myHRP.CFrame = targetHRP.CFrame * CFrame.new(2,0,2)
+
+            task.wait(0.15)
+            canTP = true
+        end
     end
 end)
