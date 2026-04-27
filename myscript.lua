@@ -14,7 +14,6 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
 
 -- =========================
 -- SAFE CHARACTER
@@ -31,14 +30,19 @@ local function hrp()
 end
 
 -- =========================
--- SPEED
-Tab:CreateButton({
-    Name = "Speed 100",
-    Callback = function()
-        hum().WalkSpeed = 100
-    end
-})
+-- STATE (กันชนกัน)
+local state = {
+    fly = false,
+    god = false,
+    noclip = false,
+    invis = false,
+    lock = false,
+    tp = false,
+    infiniteJump = false,
+}
 
+-- =========================
+-- SPEED
 Tab:CreateToggle({
     Name = "Speed Toggle",
     CurrentValue = false,
@@ -48,19 +52,9 @@ Tab:CreateToggle({
 })
 
 -- =========================
--- GOD MODE (stable)
-local god = false
-
-Tab:CreateToggle({
-    Name = "God Mode",
-    CurrentValue = false,
-    Callback = function(v)
-        god = v
-    end
-})
-
+-- GOD MODE
 RunService.Heartbeat:Connect(function()
-    if god then
+    if state.god then
         local h = hum()
         if h and h.Health < h.MaxHealth then
             h.Health = h.MaxHealth
@@ -68,66 +62,62 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
+Tab:CreateToggle({
+    Name = "God Mode",
+    CurrentValue = false,
+    Callback = function(v)
+        state.god = v
+    end
+})
+
 -- =========================
--- FLY (stable)
-local flying = false
+-- FLY (FIXED NO CONFLICT)
+local flyConn
 local bv
 
 Tab:CreateToggle({
     Name = "Fly",
     CurrentValue = false,
     Callback = function(v)
-        flying = v
+        state.fly = v
 
-        local root = hrp()
+        if flyConn then flyConn:Disconnect() flyConn = nil end
+        if bv then bv:Destroy() bv = nil end
 
         if v then
             bv = Instance.new("BodyVelocity")
             bv.MaxForce = Vector3.new(1e9,1e9,1e9)
-            bv.Parent = root
+            bv.Parent = hrp()
 
-            RunService.RenderStepped:Connect(function()
-                if flying and bv then
-                    bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * 60
-                end
+            flyConn = RunService.RenderStepped:Connect(function()
+                if not state.fly then return end
+                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * 60
             end)
-        else
-            if bv then
-                bv:Destroy()
-                bv = nil
-            end
         end
     end
 })
 
 -- =========================
--- NOCLIP (stable)
-local noclip = false
-local noclipConn
+-- NOCLIP (ไม่ชน Fly)
+RunService.Stepped:Connect(function()
+    if state.noclip then
+        for _,v in pairs(char():GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    end
+end)
 
 Tab:CreateToggle({
     Name = "NoClip",
     CurrentValue = false,
     Callback = function(v)
-        noclip = v
-
-        if noclipConn then
-            noclipConn:Disconnect()
-            noclipConn = nil
-        end
-
-        if v then
-            noclipConn = RunService.Stepped:Connect(function()
-                for _,p in pairs(char():GetDescendants()) do
-                    if p:IsA("BasePart") then
-                        p.CanCollide = false
-                    end
-                end
-            end)
-        else
-            for _,p in pairs(char():GetDescendants()) do
-                if p:IsA("BasePart") then
-                    p.CanCollide = true
+        state.noclip = v
+        if not v then
+            for _,v in pairs(char():GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CanCollide = true
                 end
             end
         end
@@ -135,62 +125,160 @@ Tab:CreateToggle({
 })
 
 -- =========================
--- 🧲 CLICK TP (FIXED + STABLE VERSION)
+-- CLICK TP (กัน spam + reset list)
+local targetPlayer
 
-local targetPlayer = nil
-local clickTP = false
-local canTP = true
-
-local function getPlayerList()
-    local t = {}
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p ~= player then
-            table.insert(t, p.Name)
-        end
-    end
-    return t
-end
-
-local dropdown = Tab:CreateDropdown({
+Tab:CreateDropdown({
     Name = "Select Player",
-    Options = getPlayerList(),
+    Options = {},
     CurrentOption = "",
     Callback = function(v)
         targetPlayer = Players:FindFirstChild(v)
     end
 })
 
+local function refreshDropdown(dropdown)
+    local list = {}
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= player then
+            table.insert(list, p.Name)
+        end
+    end
+    dropdown:Refresh(list)
+end
+
+-- =========================
+-- CLICK TP LOGIC
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if not state.tp then return end
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if not targetPlayer or not targetPlayer.Character then return end
+
+        local my = hrp()
+        local t = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+        if my and t then
+            my.CFrame = t.CFrame * CFrame.new(2,0,2)
+        end
+    end
+end)
+
 Tab:CreateToggle({
-    Name = "Click TP to Player",
+    Name = "Click TP",
     CurrentValue = false,
     Callback = function(v)
-        clickTP = v
+        state.tp = v
     end
 })
 
--- กัน bug + delay กันวาร์ปรัว
-UIS.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if not clickTP then return end
-    if not canTP then return end
+-- =========================
+-- INFINITE JUMP
+UIS.JumpRequest:Connect(function()
+    if state.infiniteJump then
+        hum():ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
 
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if not targetPlayer then return end
-        if not targetPlayer.Character then return end
+Tab:CreateToggle({
+    Name = "Infinite Jump",
+    CurrentValue = false,
+    Callback = function(v)
+        state.infiniteJump = v
+    end
+})
 
-        local myChar = char()
-        local targetChar = targetPlayer.Character
+-- =========================
+-- INVISIBILITY (FIXED + SAFE)
+local invisConn
 
-        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-        local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
-
-        if myHRP and targetHRP then
-            canTP = false
-
-            myHRP.CFrame = targetHRP.CFrame * CFrame.new(2,0,2)
-
-            task.wait(0.15)
-            canTP = true
+local function setInvisible(v)
+    local c = char()
+    for _,x in pairs(c:GetDescendants()) do
+        if x:IsA("BasePart") then
+            x.LocalTransparencyModifier = v and 1 or 0
+        elseif x:IsA("Decal") then
+            x.Transparency = v and 1 or 0
         end
+    end
+end
+
+Tab:CreateToggle({
+    Name = "Invisibility",
+    CurrentValue = false,
+    Callback = function(v)
+        state.invis = v
+
+        if invisConn then invisConn:Disconnect() invisConn = nil end
+
+        if v then
+            invisConn = RunService.Heartbeat:Connect(function()
+                setInvisible(true)
+            end)
+        else
+            setInvisible(false)
+        end
+    end
+})
+
+-- =========================
+-- HIGHLIGHT (NO LEAK)
+local function highlightPlayer(plr)
+    if plr == player then return end
+
+    plr.CharacterAdded:Connect(function(char)
+        task.wait(0.3)
+
+        local old = char:FindFirstChild("GreenHighlight")
+        if old then old:Destroy() end
+
+        local h = Instance.new("Highlight")
+        h.Name = "GreenHighlight"
+        h.FillColor = Color3.fromRGB(0,255,0)
+        h.OutlineColor = Color3.fromRGB(0,255,0)
+        h.FillTransparency = 0.3
+        h.Parent = char
+    end)
+end
+
+for _,p in ipairs(Players:GetPlayers()) do
+    highlightPlayer(p)
+end
+
+Players.PlayerAdded:Connect(highlightPlayer)
+
+-- =========================
+-- LOCK POSITION (NO CONFLICT WITH FLY)
+local lockPos
+local lockCF
+local lockConn
+
+Tab:CreateToggle({
+    Name = "Lock Position",
+    CurrentValue = false,
+    Callback = function(v)
+        lockPos = v
+
+        if lockConn then lockConn:Disconnect() lockConn = nil end
+
+        if v then
+            lockCF = hrp().CFrame
+
+            lockConn = RunService.Heartbeat:Connect(function()
+                if not lockPos then return end
+                local r = hrp()
+                r.AssemblyLinearVelocity = Vector3.zero
+                r.AssemblyAngularVelocity = Vector3.zero
+                r.CFrame = lockCF
+            end)
+        end
+    end
+})
+
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    if lockPos then
+        lockCF = hrp().CFrame
     end
 end)
