@@ -53,16 +53,16 @@ local bv, bg
 
 local keys = {W=false,A=false,S=false,D=false,Space=false,Shift=false}
 
-UIS.InputBegan:Connect(function(input,gpe)
-    if gpe then return end
-    if keys[input.KeyCode.Name] ~= nil then
-        keys[input.KeyCode.Name] = true
+UIS.InputBegan:Connect(function(i,g)
+    if g then return end
+    if keys[i.KeyCode.Name] ~= nil then
+        keys[i.KeyCode.Name] = true
     end
 end)
 
-UIS.InputEnded:Connect(function(input)
-    if keys[input.KeyCode.Name] ~= nil then
-        keys[input.KeyCode.Name] = false
+UIS.InputEnded:Connect(function(i)
+    if keys[i.KeyCode.Name] ~= nil then
+        keys[i.KeyCode.Name] = false
     end
 end)
 
@@ -85,33 +85,33 @@ local function startFly()
         if not flying then return end
 
         local cam = workspace.CurrentCamera
-        local moveDir = Vector3.zero
+        local dir = Vector3.zero
 
-        if keys.W then moveDir += cam.CFrame.LookVector end
-        if keys.S then moveDir -= cam.CFrame.LookVector end
-        if keys.A then moveDir -= cam.CFrame.RightVector end
-        if keys.D then moveDir += cam.CFrame.RightVector end
-        if keys.Space then moveDir += cam.CFrame.UpVector end
-        if keys.Shift then moveDir -= cam.CFrame.UpVector end
+        if keys.W then dir += cam.CFrame.LookVector end
+        if keys.S then dir -= cam.CFrame.LookVector end
+        if keys.A then dir -= cam.CFrame.RightVector end
+        if keys.D then dir += cam.CFrame.RightVector end
+        if keys.Space then dir += cam.CFrame.UpVector end
+        if keys.Shift then dir -= cam.CFrame.UpVector end
 
-        bv.Velocity = moveDir.Magnitude > 0 and moveDir.Unit * flySpeed or Vector3.zero
+        bv.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
         bg.CFrame = cam.CFrame
     end)
 end
 
 local function stopFly()
     flying = false
-    if flyConn then flyConn:Disconnect() flyConn=nil end
-    if bv then bv:Destroy() bv=nil end
-    if bg then bg:Destroy() bg=nil end
+    if flyConn then flyConn:Disconnect() end
+    if bv then bv:Destroy() end
+    if bg then bg:Destroy() end
 end
 
-Section:NewToggle("Fly", "", function(state)
-    if state then startFly() else stopFly() end
+Section:NewToggle("Fly", "", function(v)
+    if v then startFly() else stopFly() end
 end)
 
-Section:NewTextBox("Fly Speed", "", function(txt)
-    flySpeed = tonumber(txt) or 60
+Section:NewTextBox("Fly Speed", "", function(t)
+    flySpeed = tonumber(t) or 60
 end)
 
 -- =========================
@@ -121,8 +121,6 @@ local noclipConn
 
 local function setNoClip(state)
     if state then
-        if noclipConn then noclipConn:Disconnect() end
-
         noclipConn = RunService.Stepped:Connect(function()
             local char = player.Character
             if char then
@@ -134,8 +132,7 @@ local function setNoClip(state)
             end
         end)
     else
-        if noclipConn then noclipConn:Disconnect() noclipConn=nil end
-
+        if noclipConn then noclipConn:Disconnect() end
         local char = player.Character
         if char then
             for _,v in ipairs(char:GetDescendants()) do
@@ -147,9 +144,7 @@ local function setNoClip(state)
     end
 end
 
-Section:NewToggle("NoClip", "", function(state)
-    setNoClip(state)
-end)
+Section:NewToggle("NoClip", "", setNoClip)
 
 -- =========================
 -- MULTI JUMP
@@ -158,23 +153,6 @@ local maxJumps = 5
 local jumpCount = 0
 local boostPower = 80
 local jumpEnabled = false
-local stateConn
-
-local function setupChar(char)
-    local humanoid = char:WaitForChild("Humanoid")
-    jumpCount = 0
-
-    if stateConn then stateConn:Disconnect() end
-
-    stateConn = humanoid.StateChanged:Connect(function(_, new)
-        if new == Enum.HumanoidStateType.Landed then
-            jumpCount = 0
-        end
-    end)
-end
-
-player.CharacterAdded:Connect(setupChar)
-if player.Character then setupChar(player.Character) end
 
 UIS.JumpRequest:Connect(function()
     if not jumpEnabled then return end
@@ -185,96 +163,84 @@ UIS.JumpRequest:Connect(function()
     if jumpCount < maxJumps then
         jumpCount += 1
         humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-
         hrp.Velocity = Vector3.new(hrp.Velocity.X, boostPower, hrp.Velocity.Z)
     end
 end)
 
-Section:NewToggle("Multi Jump", "", function(state)
-    jumpEnabled = state
+Section:NewToggle("Multi Jump", "", function(v)
+    jumpEnabled = v
 end)
 
-Section:NewTextBox("Jump Power", "", function(txt)
-    boostPower = tonumber(txt) or 80
+Section:NewTextBox("Jump Power", "", function(t)
+    boostPower = tonumber(t) or 80
 end)
 
-Section:NewTextBox("Max Jumps", "", function(txt)
-    maxJumps = tonumber(txt) or 5
+Section:NewTextBox("Max Jumps", "", function(t)
+    maxJumps = tonumber(t) or 5
 end)
 
 -- =========================
--- DAMAGE PROTECTION
+-- SOUL FREECAM + FOLLOW MODE
 
-local protectEnabled = false
-local hpConn
+local cam = workspace.CurrentCamera
+local soul = false
+local camSpeed = 2
+local followTarget = nil
+local camConn
 
-local function applyProtection(char)
-    local humanoid = char:WaitForChild("Humanoid")
+local function startSoul()
+    if soul then return end
+    soul = true
 
-    if hpConn then hpConn:Disconnect() hpConn=nil end
+    getHRP().Anchored = true
+    cam.CameraType = Enum.CameraType.Scriptable
 
-    hpConn = humanoid.HealthChanged:Connect(function()
-        if protectEnabled then
-            humanoid.Health = humanoid.MaxHealth
+    camConn = RunService.RenderStepped:Connect(function()
+        if not soul then return end
+
+        local cf = cam.CFrame
+
+        -- 🎯 FOLLOW MODE
+        if followTarget and followTarget.Character and followTarget.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = followTarget.Character.HumanoidRootPart
+            cam.CFrame = hrp.CFrame * CFrame.new(0,5,12)
+            return
+        end
+
+        -- 🎥 FREECAM
+        local dir = Vector3.zero
+
+        if keys.W then dir += cf.LookVector end
+        if keys.S then dir -= cf.LookVector end
+        if keys.A then dir -= cf.RightVector end
+        if keys.D then dir += cf.RightVector end
+        if keys.Space then dir += cf.UpVector end
+        if keys.Shift then dir -= cf.UpVector end
+
+        if dir.Magnitude > 0 then
+            cam.CFrame = cf + dir.Unit * camSpeed
         end
     end)
 end
 
-player.CharacterAdded:Connect(applyProtection)
-if player.Character then applyProtection(player.Character) end
+local function stopSoul()
+    soul = false
+    followTarget = nil
 
-Section:NewToggle("Damage Protection", "", function(state)
-    protectEnabled = state
+    if camConn then camConn:Disconnect() end
+    cam.CameraType = Enum.CameraType.Custom
+    getHRP().Anchored = false
+end
+
+Section:NewToggle("Soul Freecam", "", function(v)
+    if v then startSoul() else stopSoul() end
 end)
 
--- =========================
--- HIGHLIGHT PLAYERS
+Section:NewTextBox("Cam Speed", "", function(t)
+    camSpeed = tonumber(t) or 2
+end)
 
-local highlightEnabled = false
-local highlights = {}
-
-local function createHighlight(plr)
-    if plr == player then return end
-
-    local function onChar(char)
-        if not highlightEnabled then return end
-
-        if highlights[plr] then
-            highlights[plr]:Destroy()
-        end
-
-        local hl = Instance.new("Highlight")
-        hl.FillColor = Color3.fromRGB(0,255,0)
-        hl.OutlineColor = Color3.fromRGB(0,100,0)
-        hl.FillTransparency = 0.4
-        hl.Parent = char
-
-        highlights[plr] = hl
-    end
-
-    if plr.Character then onChar(plr.Character) end
-    plr.CharacterAdded:Connect(onChar)
-end
-
-for _,p in ipairs(Players:GetPlayers()) do
-    createHighlight(p)
-end
-
-Players.PlayerAdded:Connect(createHighlight)
-
-Section:NewToggle("Highlight Players", "", function(state)
-    highlightEnabled = state
-
-    if not state then
-        for _,hl in pairs(highlights) do
-            hl:Destroy()
-        end
-        highlights = {}
-    else
-        for _,p in ipairs(Players:GetPlayers()) do
-            if p.Character then
-                createHighlight(p)
-            end
-        end
-    end
+Section:NewTextBox("Follow Player", "", function(t)
+    local p = Players:FindFirstChild(t)
+    followTarget = p
 end)
