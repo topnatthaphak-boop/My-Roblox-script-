@@ -32,11 +32,11 @@ pcall(function()
     end
 end)
 
--- ================= UI =================
+-- ================= UI (เปลี่ยนชื่อเป็น T&D Hub ตรงนี้) =================
 local Window = Rayfield:CreateWindow({
-    Name = "tokopp Hub | Secure",
-    LoadingTitle = "tokopp System",
-    LoadingSubtitle = "Authentication",
+    Name = "T&D Hub | Secure", -- เปลี่ยนชื่อตรงนี้แล้วครับ
+    LoadingTitle = "T&D System", -- เปลี่ยนชื่อตรงนี้แล้วครับ
+    LoadingSubtitle = "by Tokopp & Dola", -- ใส่ชื่อพวกเราคู่กันตรงนี้เลย
     ConfigurationSaving = {Enabled = false},
     KeySystem = false
 })
@@ -73,7 +73,7 @@ end
 -- ================= LOGIN UI =================
 LoginTab:CreateInput({
     Name = "Enter Key",
-    PlaceholderText = "กรอกคีย์",
+    PlaceholderText = "กรอกคีย์ของคุณ",
     RemoveTextAfterFocusLost = false,
     Callback = function(text)
         InputKey = text
@@ -95,7 +95,7 @@ LoginTab:CreateButton({
 -- ================= HUB FUNCTION =================
 local function LoadHub()
 
-    local Tab = Window:CreateTab("Main")
+    local Tab = Window:CreateTab("Main Hub") -- เปลี่ยนชื่อ Tab ให้ดูเป็น Hub ของเรา
 
     local state = {
         fly = false,
@@ -119,7 +119,7 @@ local function LoadHub()
 
     local flyConn
     Tab:CreateToggle({
-        Name = "Fly",
+        Name = "Fly (บิน)",
         CurrentValue = false,
         Callback = function(v)
             state.fly = v
@@ -158,7 +158,7 @@ local function LoadHub()
     end)
 
     Tab:CreateToggle({
-        Name = "NoClip",
+        Name = "NoClip (ทะลุกำแพง)",
         CurrentValue = false,
         Callback = function(v)
             state.noclip = v
@@ -175,7 +175,7 @@ local function LoadHub()
     end)
 
     Tab:CreateToggle({
-        Name = "Infinite Jump",
+        Name = "Infinite Jump (กระโดดไม่จำกัด)",
         CurrentValue = false,
         Callback = function(v)
             state.infiniteJump = v
@@ -183,15 +183,18 @@ local function LoadHub()
     })
 
     Tab:CreateButton({
-        Name = "Teleport (Click)",
+        Name = "Teleport to Mouse (คลิกเพื่อวาร์ป)",
         Callback = function()
             local mouse = player:GetMouse()
-            mouse.Button1Down:Connect(function()
+            local connection
+            connection = mouse.Button1Down:Connect(function()
                 local r = hrp()
                 if r then
                     r.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0,3,0))
                 end
+                connection:Disconnect() -- วาร์ปเสร็จแล้วปิดการทำงาน
             end)
+            Rayfield:Notify({Title = "T&D Hub", Content = "คลิกที่ไหนก็ได้เพื่อวาร์ป!", Duration = 3})
         end
     })
 
@@ -214,11 +217,12 @@ local function LoadHub()
                     v:Destroy()
                 end
             end
+            Rayfield:Notify({Title = "T&D Hub", Content = "เพิ่มความเร็วเครื่องสำเร็จ!", Duration = 3})
         end
     })
 
     Tab:CreateButton({
-        Name = "Minimize UI",
+        Name = "Minimize UI (ซ่อนหน้าจอ)",
         Callback = function()
             Rayfield:ToggleUI()
         end
@@ -227,7 +231,7 @@ end
 
 -- ================= VERIFY BUTTON =================
 LoginTab:CreateButton({
-    Name = "Verify Key",
+    Name = "Verify Key (ตรวจสอบคีย์)",
     Callback = function()
         StatusLabel:Set("Status: Checking... ⏳")
 
@@ -240,8 +244,8 @@ LoginTab:CreateButton({
             StatusLabel:Set("Status: Access Granted ✅")
 
             Rayfield:Notify({
-                Title = "Success",
-                Content = "เข้าสู่ระบบสำเร็จ",
+                Title = "Welcome to T&D Hub",
+                Content = "ยินดีต้อนรับ " .. player.Name .. " เข้าสู่ระบบ!",
                 Duration = 4
             })
 
@@ -253,7 +257,7 @@ LoginTab:CreateButton({
 
             Rayfield:Notify({
                 Title = "Error",
-                Content = "คีย์ไม่ถูกต้อง",
+                Content = "คีย์ไม่ถูกต้อง กรุณาลองใหม่",
                 Duration = 4
             })
         end
