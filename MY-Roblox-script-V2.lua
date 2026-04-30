@@ -1,4 +1,5 @@
--- โหลด UI จาก GitHub สำรอง (เสถียรกว่า)
+-- เปิดโหมดปลอดภัยเพื่อให้ UI โหลดติดง่ายขึ้นบนเครื่องสเปกต่ำ
+getgenv().SecureMode = true 
 local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 
 -- ================= CONFIG =================
@@ -12,17 +13,21 @@ local UIS = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 -- ================= SAFE FUNCTIONS =================
-local function char() return player.Character or player.CharacterAdded:Wait() end
-local function hum() 
-    local c = char()
-    return c and c:FindFirstChildOfClass("Humanoid") 
-end
-local function hrp() 
-    local c = char()
-    return c and c:FindFirstChild("HumanoidRootPart") 
+local function char()
+    return player.Character or player.CharacterAdded:Wait()
 end
 
--- ================= LOAD SAVED KEY =================
+local function hum()
+    local c = char()
+    return c and c:FindFirstChildOfClass("Humanoid")
+end
+
+local function hrp()
+    local c = char()
+    return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+-- ================= LOAD KEY =================
 local SavedKey = ""
 pcall(function()
     if isfile and isfile(LocalFile) then
@@ -32,11 +37,11 @@ end)
 
 -- ================= UI WINDOW =================
 local Window = Rayfield:CreateWindow({
-    Name = "T&D Hub | 32-bit Optimized",
-    LoadingTitle = "T&D System (Lite)",
-    LoadingSubtitle = "by Tokopp & Dola",
+    Name = "T&D Hub | Secure", 
+    LoadingTitle = "T&D System", 
+    LoadingSubtitle = "by Tokopp & Dola", 
     ConfigurationSaving = {Enabled = false},
-    KeySystem = false 
+    KeySystem = false
 })
 
 local LoginTab = Window:CreateTab("🔐 Login")
@@ -44,208 +49,185 @@ local InputKey = SavedKey or ""
 local StatusLabel = LoginTab:CreateLabel("Status: Waiting...")
 
 -- ================= UTILS =================
-local function clean(str) return (str:gsub("^%s*(.-)%s*$", "%1")) end
+local function clean(str)
+    return (str:gsub("^%s*(.-)%s*$", "%1"))
+end
 
 local function VerifyKey(key)
     key = clean(key or "")
     if key == "" then return false end
-    local success, result = pcall(function() return game:HttpGet(KeyURL) end)
+    local success, result = pcall(function()
+        return game:HttpGet(KeyURL)
+    end)
     if success and result then
         for line in result:gmatch("[^\r\n]+") do
-            if clean(line) == key then return true end
+            if clean(line) == key then
+                return true
+            end
         end
     end
     return false
 end
 
--- ================= FLY SYSTEM (Advanced Fly ตัวที่คุณชอบ) =================
-local flying = false
-local flySpeed = 50
-local flyConn = nil
-local bv, bg
-
-local function stopFly()
-    if flyConn then flyConn:Disconnect() end
-    if bv then bv:Destroy() end
-    if bg then bg:Destroy() end
-    local h = hum()
-    if h then h.PlatformStand = false end
-end
-
-local function startFly()
-    stopFly()
-    local root = hrp()
-    local h = hum()
-    if not root or not h then return end
-
-    bg = Instance.new("BodyGyro")
-    bg.P = 9e4
-    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bg.cframe = root.CFrame
-    bg.Parent = root
-
-    bv = Instance.new("BodyVelocity")
-    bv.velocity = Vector3.new(0, 0.1, 0)
-    bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Parent = root
-    h.PlatformStand = true
-
-    flyConn = RunService.RenderStepped:Connect(function()
-        local camera = workspace.CurrentCamera
-        local moveDir = h.MoveDirection
-        bv.velocity = camera.CFrame.LookVector * (moveDir.Magnitude > 0 and flySpeed or 0)
-        if moveDir.Magnitude == 0 then bv.velocity = Vector3.new(0, 0.1, 0) end
-        bg.cframe = camera.CFrame
-    end)
-end
-
--- ================= ESP SYSTEM (Optimized) =================
-local esp_enabled = false
-
-local function createESP(plr)
-    if plr == player then return end
-    local function addHighlight(character)
-        if not character then return end
-        
-        local highlight = character:FindFirstChild("TD_Highlight") or Instance.new("Highlight")
-        highlight.Name = "TD_Highlight"
-        highlight.Parent = character
-        highlight.FillColor = Color3.fromRGB(0, 255, 0)
-        highlight.Enabled = esp_enabled
-
-        local head = character:WaitForChild("Head", 5)
-        if head then
-            local billboard = head:FindFirstChild("TD_NameTag") or Instance.new("BillboardGui")
-            billboard.Name = "TD_NameTag"
-            billboard.Adornee = head
-            billboard.Size = UDim2.new(0, 80, 0, 40)
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.AlwaysOnTop = true
-            billboard.Parent = head
-            billboard.Enabled = esp_enabled
-
-            local label = billboard:FindFirstChild("TextLabel") or Instance.new("TextLabel")
-            label.BackgroundTransparency = 1
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.Text = plr.Name
-            label.TextColor3 = Color3.fromRGB(0, 255, 0)
-            label.TextScaled = true
-            label.Parent = billboard
-        end
+-- ================= LOGIN UI =================
+LoginTab:CreateInput({
+    Name = "Enter Key",
+    PlaceholderText = "กรอกคีย์ของคุณ",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(text)
+        InputKey = text
     end
-    plr.CharacterAdded:Connect(addHighlight)
-    if plr.Character then addHighlight(plr.Character) end
-end
+})
 
--- ================= HUB CONTENT =================
+LoginTab:CreateButton({
+    Name = "Get Key",
+    Callback = function()
+        setclipboard("https://pastebin.com/Kvdbsd9C")
+        Rayfield:Notify({
+            Title = "Copied",
+            Content = "ลิงก์รับคีย์ถูกคัดลอกแล้ว",
+            Duration = 4
+        })
+    end
+})
+
+-- ================= HUB FUNCTION =================
 local function LoadHub()
-    local Tab = Window:CreateTab("Main Hub")
-    local state = { noclip = false, infiniteJump = false }
+    local Tab = Window:CreateTab("Main Hub") 
+    local state = {
+        fly = false,
+        noclip = false,
+        infiniteJump = false,
+        speed = 16,
+        flySpeed = 35
+    }
 
     Tab:CreateSection("Movement")
-    
+
     Tab:CreateSlider({
         Name = "WalkSpeed",
         Range = {16, 250},
         Increment = 1,
         CurrentValue = 16,
         Callback = function(v)
+            state.speed = v
             local h = hum()
             if h then h.WalkSpeed = v end
         end
     })
 
+    local flyConn
     Tab:CreateToggle({
-        Name = "Advanced Fly (บินตามกล้อง)",
+        Name = "Fly (ระบบบิน)",
         CurrentValue = false,
         Callback = function(v)
-            flying = v
-            if v then startFly() else stopFly() end
+            state.fly = v
+            if flyConn then flyConn:Disconnect() end
+            if v then
+                flyConn = RunService.RenderStepped:Connect(function()
+                    local r = hrp()
+                    if r and state.fly then
+                        r.Velocity = workspace.CurrentCamera.CFrame.LookVector * state.flySpeed
+                    end
+                end)
+            else
+                local r = hrp()
+                if r then r.Velocity = Vector3.new(0,0,0) end
+            end
         end
     })
 
     Tab:CreateSlider({
         Name = "Fly Speed",
-        Range = {20, 500},
+        Range = {20, 300},
         Increment = 5,
-        CurrentValue = 50,
-        Callback = function(v) flySpeed = v end
-    })
-
-    Tab:CreateSection("Visuals & Cheats")
-
-    Tab:CreateToggle({
-        Name = "ESP Player (มองทะลุ)",
-        CurrentValue = false,
+        CurrentValue = 35,
         Callback = function(v)
-            esp_enabled = v
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p.Character then
-                    if p.Character:FindFirstChild("TD_Highlight") then p.Character.TD_Highlight.Enabled = v end
-                    local head = p.Character:FindFirstChild("Head")
-                    if head and head:FindFirstChild("TD_NameTag") then head.TD_NameTag.Enabled = v end
-                end
-            end
+            state.flySpeed = v
         end
     })
+
+    Tab:CreateSection("Cheats")
 
     Tab:CreateToggle({
         Name = "NoClip (เดินทะลุ)",
         CurrentValue = false,
-        Callback = function(v) state.noclip = v end
+        Callback = function(v)
+            state.noclip = v
+        end
     })
 
     Tab:CreateToggle({
         Name = "Infinite Jump",
         CurrentValue = false,
-        Callback = function(v) state.infiniteJump = v end
-    })
-
-    Tab:CreateSection("Misc")
-
-    Tab:CreateButton({
-        Name = "FPS Boost (ลดแลค)",
-        Callback = function()
-            for _,v in ipairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then 
-                    v.Material = Enum.Material.Plastic 
-                    v.Reflectance = 0
-                elseif v:IsA("Decal") or v:IsA("Texture") then 
-                    v:Destroy() 
-                end
-            end
+        Callback = function(v)
+            state.infiniteJump = v
         end
     })
 
+    Tab:CreateButton({
+        Name = "Teleport to Mouse (วาร์ปไปที่เมาส์)",
+        Callback = function()
+            local mouse = player:GetMouse()
+            local connection
+            connection = mouse.Button1Down:Connect(function()
+                local r = hrp()
+                if r then
+                    r.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0,3,0))
+                end
+                connection:Disconnect()
+            end)
+            Rayfield:Notify({Title = "T&D Hub", Content = "คลิกที่ไหนก็ได้เพื่อวาร์ป!", Duration = 3})
+        end
+    })
+
+    Tab:CreateSection("Misc & Optimization")
+
+    Tab:CreateButton({
+        Name = "FPS Boost",
+        Callback = function()
+            for _,v in pairs(game:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Material = Enum.Material.Plastic
+                    v.Reflectance = 0
+                elseif v:IsA("Decal") or v:IsA("Texture") then
+                    v:Destroy()
+                end
+            end
+            Rayfield:Notify({Title = "T&D Hub", Content = "ลดกราฟิกสำเร็จ!", Duration = 3})
+        end
+    })
+
+    Tab:CreateButton({
+        Name = "Reset Character",
+        Callback = function()
+            local c = char()
+            if c then c:BreakJoints() end
+        end
+    })
+
+    -- ระบบวนลูป NoClip
     RunService.Stepped:Connect(function()
         if state.noclip then
             local c = char()
             if c then
-                for _, v in ipairs(c:GetChildren()) do
-                    if v:IsA("BasePart") and v.CanCollide then 
-                        v.CanCollide = false 
-                    end
+                for _,v in ipairs(c:GetChildren()) do
+                    if v:IsA("BasePart") then v.CanCollide = false end
                 end
             end
         end
     end)
+
+    -- ระบบ Infinite Jump
+    UIS.JumpRequest:Connect(function()
+        if state.infiniteJump then
+            local h = hum()
+            if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end
+    end)
 end
 
-for _, v in ipairs(Players:GetPlayers()) do createESP(v) end
-Players.PlayerAdded:Connect(createESP)
-
--- ================= LOGIN LOGIC =================
-LoginTab:CreateInput({
-    Name = "Enter Key",
-    PlaceholderText = "กรอกคีย์ที่นี่...",
-    Callback = function(text) InputKey = text end
-})
-
-LoginTab:CreateButton({
-    Name = "Get Key",
-    Callback = function() setclipboard("https://pastebin.com/Kvdbsd9C") end
-})
-
+-- ================= VERIFY BUTTON =================
 LoginTab:CreateButton({
     Name = "Verify Key",
     Callback = function()
@@ -253,19 +235,22 @@ LoginTab:CreateButton({
         if VerifyKey(InputKey) then
             if writefile then pcall(function() writefile(LocalFile, clean(InputKey)) end) end
             StatusLabel:Set("Status: Access Granted ✅")
-            task.wait(0.3)
+            Rayfield:Notify({Title = "Welcome", Content = "ยินดีต้อนรับสู่ T&D Hub!", Duration = 3})
+            task.wait(0.5)
             LoadHub()
         else
             StatusLabel:Set("Status: Invalid Key ❌")
+            Rayfield:Notify({Title = "Error", Content = "คีย์ไม่ถูกต้อง!", Duration = 3})
         end
     end
 })
 
+-- ================= AUTO LOGIN =================
 if SavedKey ~= "" then
     task.spawn(function()
         if VerifyKey(SavedKey) then
             StatusLabel:Set("Status: Auto Login ✅")
-            task.wait(0.3)
+            task.wait(0.5)
             LoadHub()
         end
     end)
