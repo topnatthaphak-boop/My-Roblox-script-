@@ -12,21 +12,27 @@ local player = Players.LocalPlayer
 
 -- ================= SAFE FUNCTIONS =================
 local function char() return player.Character or player.CharacterAdded:Wait() end
-local function hum() return char():FindFirstChildOfClass("Humanoid") end
-local function hrp() return char():FindFirstChild("HumanoidRootPart") end
+local function hum() 
+    local c = char()
+    return c and c:FindFirstChildOfClass("Humanoid") 
+end
+local function hrp() 
+    local c = char()
+    return c and c:FindFirstChild("HumanoidRootPart") 
+end
 
 -- ================= LOAD SAVED KEY =================
 local SavedKey = ""
 pcall(function()
-    if isfile(LocalFile) then
+    if isfile and isfile(LocalFile) then
         SavedKey = readfile(LocalFile)
     end
 end)
 
 -- ================= UI WINDOW =================
 local Window = Rayfield:CreateWindow({
-    Name = "T&D Hub | Secure",
-    LoadingTitle = "T&D System",
+    Name = "T&D Hub | 32-bit Optimized",
+    LoadingTitle = "T&D System (Lite)",
     LoadingSubtitle = "by Tokopp & Dola",
     ConfigurationSaving = {Enabled = false},
     KeySystem = false
@@ -37,10 +43,11 @@ local InputKey = SavedKey or ""
 local StatusLabel = LoginTab:CreateLabel("Status: Waiting...")
 
 -- ================= UTILS =================
-local function clean(str) return (str:gsub("^%s*(.-)%s*$\", \"%1\")) end
+local function clean(str) return (str:gsub("^%s*(.-)%s*$", "%1")) end
 
 local function VerifyKey(key)
-    key = clean(key)
+    key = clean(key or "")
+    if key == "" then return false end
     local success, result = pcall(function() return game:HttpGet(KeyURL) end)
     if success and result then
         for line in result:gmatch("[^\r\n]+") do
@@ -50,7 +57,7 @@ local function VerifyKey(key)
     return false
 end
 
--- ================= FLY SYSTEM =================
+-- ================= FLY SYSTEM (คงเดิมตามคำขอ) =================
 local flying = false
 local flySpeed = 50
 local flyConn = nil
@@ -91,7 +98,7 @@ local function startFly()
     end)
 end
 
--- ================= ESP SYSTEM =================
+-- ================= ESP SYSTEM (Optimized) =================
 local esp_enabled = false
 
 local function createESP(plr)
@@ -99,35 +106,30 @@ local function createESP(plr)
     local function addHighlight(character)
         if not character then return end
         
-        -- Highlight (ตัวเรืองแสง)
         local highlight = character:FindFirstChild("TD_Highlight") or Instance.new("Highlight")
         highlight.Name = "TD_Highlight"
         highlight.Parent = character
         highlight.FillColor = Color3.fromRGB(0, 255, 0)
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency = 0.5
         highlight.Enabled = esp_enabled
 
-        -- NameTag (ชื่อ)
         local head = character:WaitForChild("Head", 5)
         if head then
             local billboard = head:FindFirstChild("TD_NameTag") or Instance.new("BillboardGui")
             billboard.Name = "TD_NameTag"
             billboard.Adornee = head
-            billboard.Size = UDim2.new(0, 100, 0, 50)
+            billboard.Size = UDim2.new(0, 80, 0, 40)
             billboard.StudsOffset = Vector3.new(0, 3, 0)
             billboard.AlwaysOnTop = true
             billboard.Parent = head
+            billboard.Enabled = esp_enabled
 
             local label = billboard:FindFirstChild("TextLabel") or Instance.new("TextLabel")
             label.BackgroundTransparency = 1
             label.Size = UDim2.new(1, 0, 1, 0)
             label.Text = plr.Name
             label.TextColor3 = Color3.fromRGB(0, 255, 0)
-            label.TextStrokeTransparency = 0
             label.TextScaled = true
             label.Parent = billboard
-            billboard.Enabled = esp_enabled
         end
     end
     plr.CharacterAdded:Connect(addHighlight)
@@ -153,7 +155,7 @@ local function LoadHub()
     })
 
     Tab:CreateToggle({
-        Name = "Advanced Fly (บินตามกล้อง)",
+        Name = "Advanced Fly (ตัวที่คุณชอบ)",
         CurrentValue = false,
         Callback = function(v)
             flying = v
@@ -172,23 +174,22 @@ local function LoadHub()
     Tab:CreateSection("Visuals & Cheats")
 
     Tab:CreateToggle({
-        Name = "ESP Player (เรืองแสงสีเขียว)",
+        Name = "ESP Player",
         CurrentValue = false,
         Callback = function(v)
             esp_enabled = v
             for _, p in ipairs(Players:GetPlayers()) do
                 if p.Character then
                     if p.Character:FindFirstChild("TD_Highlight") then p.Character.TD_Highlight.Enabled = v end
-                    if p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("TD_NameTag") then
-                        p.Character.Head.TD_NameTag.Enabled = v
-                    end
+                    local head = p.Character:FindFirstChild("Head")
+                    if head and head:FindFirstChild("TD_NameTag") then head.TD_NameTag.Enabled = v end
                 end
             end
         end
     })
 
     Tab:CreateToggle({
-        Name = "NoClip (เดินทะลุ)",
+        Name = "NoClip (Lite Mode)",
         CurrentValue = false,
         Callback = function(v) state.noclip = v end
     })
@@ -202,26 +203,35 @@ local function LoadHub()
     Tab:CreateSection("Misc")
 
     Tab:CreateButton({
-        Name = "FPS Boost",
+        Name = "FPS Boost (ลบ Decal/Texture)",
         Callback = function()
-            for _,v in pairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then v.Material = Enum.Material.Plastic v.Reflectance = 0
-                elseif v:IsA("Decal") then v:Destroy() end
+            for _,v in ipairs(game:GetDescendants()) do
+                if v:IsA("BasePart") then 
+                    v.Material = Enum.Material.Plastic 
+                    v.Reflectance = 0
+                elseif v:IsA("Decal") or v:IsA("Texture") then 
+                    v:Destroy() 
+                end
             end
         end
     })
 
-    -- ระบบวนลูป NoClip & Infinite Jump
+    -- ระบบวนลูป NoClip & Infinite Jump (Optimized)
     RunService.Stepped:Connect(function()
         if state.noclip then
-            for _, v in ipairs(char():GetChildren()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
+            local c = char()
+            if c then
+                for _, v in ipairs(c:GetChildren()) do
+                    if v:IsA("BasePart") and v.CanCollide then 
+                        v.CanCollide = false 
+                    end
+                end
             end
         end
     end)
 end
 
--- Setup ESP for all players
+-- Setup ESP
 for _, v in ipairs(Players:GetPlayers()) do createESP(v) end
 Players.PlayerAdded:Connect(createESP)
 
@@ -242,9 +252,9 @@ LoginTab:CreateButton({
     Callback = function()
         StatusLabel:Set("Status: Checking... ⏳")
         if VerifyKey(InputKey) then
-            pcall(function() writefile(LocalFile, clean(InputKey)) end)
+            if writefile then pcall(function() writefile(LocalFile, clean(InputKey)) end) end
             StatusLabel:Set("Status: Access Granted ✅")
-            task.wait(0.5)
+            task.wait(0.3)
             LoadHub()
         else
             StatusLabel:Set("Status: Invalid Key ❌")
@@ -252,13 +262,13 @@ LoginTab:CreateButton({
     end
 })
 
+-- Auto Login
 if SavedKey ~= "" then
     task.spawn(function()
         if VerifyKey(SavedKey) then
             StatusLabel:Set("Status: Auto Login ✅")
-            task.wait(0.5)
+            task.wait(0.3)
             LoadHub()
         end
     end)
-            end
-            
+end
