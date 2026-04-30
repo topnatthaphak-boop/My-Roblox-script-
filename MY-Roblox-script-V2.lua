@@ -1,4 +1,5 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- เปลี่ยนลิงก์โหลด UI เป็น GitHub เพื่อความเสถียร (ป้องกันเว็บล่ม)
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 
 -- ================= CONFIG =================
 local KeyURL = "https://pastebin.com/raw/Kvdbsd9C"
@@ -35,7 +36,7 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle = "T&D System (Lite)",
     LoadingSubtitle = "by Tokopp & Dola",
     ConfigurationSaving = {Enabled = false},
-    KeySystem = false
+    KeySystem = false -- เราใช้ระบบ Login แบบ Tab แยกเองเพื่อความเบา
 })
 
 local LoginTab = Window:CreateTab("🔐 Login")
@@ -50,6 +51,7 @@ local function VerifyKey(key)
     if key == "" then return false end
     local success, result = pcall(function() return game:HttpGet(KeyURL) end)
     if success and result then
+        -- ตรวจสอบคีย์จากบรรทัดใน Pastebin
         for line in result:gmatch("[^\r\n]+") do
             if clean(line) == key then return true end
         end
@@ -57,7 +59,7 @@ local function VerifyKey(key)
     return false
 end
 
--- ================= FLY SYSTEM (คงเดิมตามคำขอ) =================
+-- ================= FLY SYSTEM (Advanced Fly ตัวที่คุณชอบ) =================
 local flying = false
 local flySpeed = 50
 local flyConn = nil
@@ -92,13 +94,14 @@ local function startFly()
     flyConn = RunService.RenderStepped:Connect(function()
         local camera = workspace.CurrentCamera
         local moveDir = h.MoveDirection
+        -- บินตามทิศทางกล้องหันไป
         bv.velocity = camera.CFrame.LookVector * (moveDir.Magnitude > 0 and flySpeed or 0)
         if moveDir.Magnitude == 0 then bv.velocity = Vector3.new(0, 0.1, 0) end
         bg.cframe = camera.CFrame
     end)
 end
 
--- ================= ESP SYSTEM (Optimized) =================
+-- ================= ESP SYSTEM (Optimized for 32-bit) =================
 local esp_enabled = false
 
 local function createESP(plr)
@@ -106,12 +109,14 @@ local function createESP(plr)
     local function addHighlight(character)
         if not character then return end
         
+        -- ตัวเรืองแสง
         local highlight = character:FindFirstChild("TD_Highlight") or Instance.new("Highlight")
         highlight.Name = "TD_Highlight"
         highlight.Parent = character
         highlight.FillColor = Color3.fromRGB(0, 255, 0)
         highlight.Enabled = esp_enabled
 
+        -- ป้ายชื่อ
         local head = character:WaitForChild("Head", 5)
         if head then
             local billboard = head:FindFirstChild("TD_NameTag") or Instance.new("BillboardGui")
@@ -189,7 +194,7 @@ local function LoadHub()
     })
 
     Tab:CreateToggle({
-        Name = "NoClip (Lite Mode)",
+        Name = "NoClip (เดินทะลุ)",
         CurrentValue = false,
         Callback = function(v) state.noclip = v end
     })
@@ -203,7 +208,7 @@ local function LoadHub()
     Tab:CreateSection("Misc")
 
     Tab:CreateButton({
-        Name = "FPS Boost (ลบ Decal/Texture)",
+        Name = "FPS Boost (ลดแลค)",
         Callback = function()
             for _,v in ipairs(game:GetDescendants()) do
                 if v:IsA("BasePart") then 
@@ -216,7 +221,7 @@ local function LoadHub()
         end
     })
 
-    -- ระบบวนลูป NoClip & Infinite Jump (Optimized)
+    -- วนลูป NoClip & Infinite Jump
     RunService.Stepped:Connect(function()
         if state.noclip then
             local c = char()
@@ -243,7 +248,7 @@ LoginTab:CreateInput({
 })
 
 LoginTab:CreateButton({
-    Name = "Get Key",
+    Name = "Get Key (Copy Link)",
     Callback = function() setclipboard("https://pastebin.com/Kvdbsd9C") end
 })
 
@@ -262,7 +267,7 @@ LoginTab:CreateButton({
     end
 })
 
--- Auto Login
+-- Auto Login (ถ้ามีคีย์เก่าเก็บไว้)
 if SavedKey ~= "" then
     task.spawn(function()
         if VerifyKey(SavedKey) then
