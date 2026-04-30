@@ -37,7 +37,7 @@ local InputKey = SavedKey or ""
 local StatusLabel = LoginTab:CreateLabel("Status: Waiting...")
 
 -- ================= UTILS =================
-local function clean(str) return (str:gsub("^%s*(.-)%s*$", "%1")) end
+local function clean(str) return (str:gsub("^%s*(.-)%s*$\", \"%1\")) end
 
 local function VerifyKey(key)
     key = clean(key)
@@ -50,14 +50,13 @@ local function VerifyKey(key)
     return false
 end
 
--- ================= FLY SYSTEM (NEW) =================
+-- ================= FLY SYSTEM =================
 local flying = false
 local flySpeed = 50
 local flyConn = nil
 local bv, bg
 
 local function stopFly()
-    flying = false
     if flyConn then flyConn:Disconnect() end
     if bv then bv:Destroy() end
     if bg then bg:Destroy() end
@@ -66,7 +65,7 @@ local function stopFly()
 end
 
 local function startFly()
-    stopFly() -- Clear old fly if exists
+    stopFly()
     local root = hrp()
     local h = hum()
     if not root or not h then return end
@@ -81,47 +80,80 @@ local function startFly()
     bv.velocity = Vector3.new(0, 0.1, 0)
     bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
     bv.Parent = root
-
     h.PlatformStand = true
 
     flyConn = RunService.RenderStepped:Connect(function()
         local camera = workspace.CurrentCamera
         local moveDir = h.MoveDirection
-        
         bv.velocity = camera.CFrame.LookVector * (moveDir.Magnitude > 0 and flySpeed or 0)
-        if moveDir.Magnitude == 0 then
-            bv.velocity = Vector3.new(0, 0.1, 0)
-        end
+        if moveDir.Magnitude == 0 then bv.velocity = Vector3.new(0, 0.1, 0) end
         bg.cframe = camera.CFrame
     end)
+end
+
+-- ================= ESP SYSTEM =================
+local esp_enabled = false
+
+local function createESP(plr)
+    if plr == player then return end
+    local function addHighlight(character)
+        if not character then return end
+        
+        -- Highlight (ตัวเรืองแสง)
+        local highlight = character:FindFirstChild("TD_Highlight") or Instance.new("Highlight")
+        highlight.Name = "TD_Highlight"
+        highlight.Parent = character
+        highlight.FillColor = Color3.fromRGB(0, 255, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.5
+        highlight.Enabled = esp_enabled
+
+        -- NameTag (ชื่อ)
+        local head = character:WaitForChild("Head", 5)
+        if head then
+            local billboard = head:FindFirstChild("TD_NameTag") or Instance.new("BillboardGui")
+            billboard.Name = "TD_NameTag"
+            billboard.Adornee = head
+            billboard.Size = UDim2.new(0, 100, 0, 50)
+            billboard.StudsOffset = Vector3.new(0, 3, 0)
+            billboard.AlwaysOnTop = true
+            billboard.Parent = head
+
+            local label = billboard:FindFirstChild("TextLabel") or Instance.new("TextLabel")
+            label.BackgroundTransparency = 1
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.Text = plr.Name
+            label.TextColor3 = Color3.fromRGB(0, 255, 0)
+            label.TextStrokeTransparency = 0
+            label.TextScaled = true
+            label.Parent = billboard
+            billboard.Enabled = esp_enabled
+        end
+    end
+    plr.CharacterAdded:Connect(addHighlight)
+    if plr.Character then addHighlight(plr.Character) end
 end
 
 -- ================= HUB CONTENT =================
 local function LoadHub()
     local Tab = Window:CreateTab("Main Hub")
-    
-    local state = {
-        noclip = false,
-        infiniteJump = false,
-        speed = 16
-    }
+    local state = { noclip = false, infiniteJump = false }
 
-    -- WalkSpeed
+    Tab:CreateSection("Movement")
+    
     Tab:CreateSlider({
         Name = "WalkSpeed",
-        Range = {16, 200},
+        Range = {16, 250},
         Increment = 1,
         CurrentValue = 16,
         Callback = function(v)
-            state.speed = v
             local h = hum()
             if h then h.WalkSpeed = v end
         end
     })
 
-    -- Advanced Fly (The one you requested!)
     Tab:CreateToggle({
-        Name = "Fly (บินแบบเสถียร)",
+        Name = "Advanced Fly (บินตามกล้อง)",
         CurrentValue = false,
         Callback = function(v)
             flying = v
@@ -132,35 +164,34 @@ local function LoadHub()
     Tab:CreateSlider({
         Name = "Fly Speed",
         Range = {20, 500},
-        Increment = 10,
+        Increment = 5,
         CurrentValue = 50,
+        Callback = function(v) flySpeed = v end
+    })
+
+    Tab:CreateSection("Visuals & Cheats")
+
+    Tab:CreateToggle({
+        Name = "ESP Player (เรืองแสงสีเขียว)",
+        CurrentValue = false,
         Callback = function(v)
-            flySpeed = v
+            esp_enabled = v
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character then
+                    if p.Character:FindFirstChild("TD_Highlight") then p.Character.TD_Highlight.Enabled = v end
+                    if p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("TD_NameTag") then
+                        p.Character.Head.TD_NameTag.Enabled = v
+                    end
+                end
+            end
         end
     })
 
-    -- NoClip
-    RunService.Stepped:Connect(function()
-        if state.noclip then
-            for _, v in ipairs(char():GetChildren()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
-            end
-        end
-    end)
-
     Tab:CreateToggle({
-        Name = "NoClip (ทะลุกำแพง)",
+        Name = "NoClip (เดินทะลุ)",
         CurrentValue = false,
         Callback = function(v) state.noclip = v end
     })
-
-    -- Infinite Jump
-    UIS.JumpRequest:Connect(function()
-        if state.infiniteJump then
-            local h = hum()
-            if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
-        end
-    end)
 
     Tab:CreateToggle({
         Name = "Infinite Jump",
@@ -168,42 +199,36 @@ local function LoadHub()
         Callback = function(v) state.infiniteJump = v end
     })
 
-    -- Other Features
-    Tab:CreateButton({
-        Name = "Teleport (Click)",
-        Callback = function()
-            local mouse = player:GetMouse()
-            mouse.Button1Down:Connect(function()
-                local r = hrp()
-                if r then r.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0,3,0)) end
-            end)
-        end
-    })
+    Tab:CreateSection("Misc")
 
     Tab:CreateButton({
         Name = "FPS Boost",
         Callback = function()
             for _,v in pairs(game:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.Material = Enum.Material.Plastic
-                    v.Reflectance = 0
-                elseif v:IsA("Decal") then
-                    v:Destroy()
-                end
+                if v:IsA("BasePart") then v.Material = Enum.Material.Plastic v.Reflectance = 0
+                elseif v:IsA("Decal") then v:Destroy() end
             end
         end
     })
 
-    Tab:CreateButton({
-        Name = "Minimize UI",
-        Callback = function() Rayfield:ToggleUI() end
-    })
+    -- ระบบวนลูป NoClip & Infinite Jump
+    RunService.Stepped:Connect(function()
+        if state.noclip then
+            for _, v in ipairs(char():GetChildren()) do
+                if v:IsA("BasePart") then v.CanCollide = false end
+            end
+        end
+    end)
 end
+
+-- Setup ESP for all players
+for _, v in ipairs(Players:GetPlayers()) do createESP(v) end
+Players.PlayerAdded:Connect(createESP)
 
 -- ================= LOGIN LOGIC =================
 LoginTab:CreateInput({
     Name = "Enter Key",
-    PlaceholderText = "กรอกคีย์ของคุณ",
+    PlaceholderText = "กรอกคีย์ที่นี่...",
     Callback = function(text) InputKey = text end
 })
 
@@ -219,7 +244,7 @@ LoginTab:CreateButton({
         if VerifyKey(InputKey) then
             pcall(function() writefile(LocalFile, clean(InputKey)) end)
             StatusLabel:Set("Status: Access Granted ✅")
-            task.wait(1)
+            task.wait(0.5)
             LoadHub()
         else
             StatusLabel:Set("Status: Invalid Key ❌")
@@ -227,13 +252,13 @@ LoginTab:CreateButton({
     end
 })
 
--- Auto Login
 if SavedKey ~= "" then
     task.spawn(function()
         if VerifyKey(SavedKey) then
             StatusLabel:Set("Status: Auto Login ✅")
-            task.wait(1)
+            task.wait(0.5)
             LoadHub()
         end
     end)
-end
+            end
+            
