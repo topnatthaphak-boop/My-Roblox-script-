@@ -15,19 +15,19 @@ local function hrp() return char():FindFirstChild("HumanoidRootPart") end
 -- ================= UI SETUP =================
 local Window = Rayfield:CreateWindow({
     Name = "T&D Hub | Forsaken Perfect V4",
-    LoadingTitle = "Forsaken Special Edition",
+    LoadingTitle = "T&D Hub Version 4",
     LoadingSubtitle = "by Tokopp & Dola",
     ConfigurationSaving = {Enabled = false},
     KeySystem = false
 })
 
-local Tab = Window:CreateTab("⚔️ Combat & Main")
+local Tab = Window:CreateTab("🏠 Main & Combat")
 local VisualTab = Window:CreateTab("👁️ Visuals")
 
 local state = {
     infStamina = false,
     autoGen = false,
-    killAura = false, -- เพิ่มใหม่
+    killAura = false,
     espEnabled = false,
     genESP = false,
     walkTP = false,
@@ -35,9 +35,9 @@ local state = {
     killAuraDist = 15
 }
 
--- ================= CORE FUNCTIONALITY =================
+-- ================= FUNCTIONALITY =================
 
--- 1. Walk TP System (เนียนและตรวจจับยาก)
+-- 1. Walk TP System (ระบบเดินวาร์ปที่เนียนกว่าเดิม)
 RunService.RenderStepped:Connect(function()
     if state.walkTP and hum() and hum().MoveDirection.Magnitude > 0 then
         if hrp() then
@@ -46,7 +46,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- 2. Kill Aura (โจมตีอัตโนมัติรอบตัว)
+-- 2. Kill Aura (โจมตีอัตโนมัติ - เพิ่มใหม่!)
 task.spawn(function()
     while task.wait(0.1) do
         if state.killAura then
@@ -54,11 +54,8 @@ task.spawn(function()
                 if v:FindFirstChild("Humanoid") and v ~= char() then
                     local dist = (hrp().Position - v.PrimaryPart.Position).Magnitude
                     if dist <= state.killAuraDist then
-                        -- ค้นหา Remote โจมตีอัตโนมัติ
                         local attackRemote = ReplicatedStorage:FindFirstChild("AttackRemote") or ReplicatedStorage:FindFirstChild("Punch")
-                        if attackRemote then
-                            attackRemote:FireServer(v.Humanoid)
-                        end
+                        if attackRemote then attackRemote:FireServer(v.Humanoid) end
                     end
                 end
             end
@@ -71,14 +68,12 @@ task.spawn(function()
     while task.wait(0.5) do
         if state.infStamina then
             local stamina = player:FindFirstChild("Stamina") or char():FindFirstChild("Stamina")
-            if stamina and stamina:IsA("NumberValue") then
-                stamina.Value = 100
-            end
+            if stamina and stamina:IsA("NumberValue") then stamina.Value = 100 end
         end
     end
 end)
 
--- 4. Auto Generator (ปั่นไฟ)
+-- 4. Auto Generator System (ปั่นไฟ)
 task.spawn(function()
     while task.wait(0.1) do
         if state.autoGen then
@@ -96,7 +91,6 @@ end)
 
 -- ================= UI COMPONENTS =================
 
--- [ MAIN TAB ]
 Tab:CreateToggle({
     Name = "Kill Aura (โจมตีรอบตัว)",
     CurrentValue = false,
@@ -110,7 +104,7 @@ Tab:CreateToggle({
 })
 
 Tab:CreateSlider({
-    Name = "Walk TP Speed",
+    Name = "Walk TP Strength",
     Range = {0.1, 2},
     Increment = 0.1,
     CurrentValue = 0.5,
@@ -124,12 +118,12 @@ Tab:CreateToggle({
 })
 
 Tab:CreateToggle({
-    Name = "Auto Repair (ปั่นไฟ)",
+    Name = "Auto Repair (ปั่นไฟอัตโนมัติ)",
     CurrentValue = false,
     Callback = function(v) state.autoGen = v end,
 })
 
--- [ VISUAL TAB ]
+-- Visuals
 VisualTab:CreateButton({
     Name = "Full Bright (เปิดแสงสว่าง)",
     Callback = function()
@@ -140,13 +134,11 @@ VisualTab:CreateButton({
     end,
 })
 
--- ESP System (ใช้ Highlight สำหรับผู้เล่น)
 local function CreateESP(p)
     if p == player or not p.Character then return end
     local hl = p.Character:FindFirstChild("TND_ESP") or Instance.new("Highlight", p.Character)
     hl.Name = "TND_ESP"
     hl.FillColor = Color3.fromRGB(255, 0, 0)
-    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
     hl.FillTransparency = 0.5
 end
 
@@ -162,28 +154,9 @@ VisualTab:CreateToggle({
     end,
 })
 
-VisualTab:CreateToggle({
-    Name = "Generator ESP",
-    CurrentValue = false,
-    Callback = function(v)
-        state.genESP = v
-        for _, obj in pairs(workspace:GetChildren()) do
-            if obj.Name:lower():find("generator") then
-                if v then
-                    local hl = Instance.new("Highlight", obj)
-                    hl.Name = "TND_GenESP"
-                    hl.FillColor = Color3.fromRGB(0, 255, 0)
-                else
-                    if obj:FindFirstChild("TND_GenESP") then obj.TND_GenESP:Destroy() end
-                end
-            end
-        end
-    end,
-})
-
 -- ================= INITIALIZE =================
 Rayfield:Notify({
     Title = "T&D Hub Perfect Loaded",
-    Content = "ร่วมพัฒนาโดย Tokopp & Dola พร้อมลุย Forsaken แล้ว!",
+    Content = "อัปเดตระบบ Kill Aura และ Perfect Logic เรียบร้อยแล้ว!",
     Duration = 5
 })
