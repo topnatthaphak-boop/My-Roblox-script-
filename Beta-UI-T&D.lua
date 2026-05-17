@@ -1,3 +1,4 @@
+-- [[ T&D Phoenix A: Final Edition with Dual-Mode Support ]]
 local PhoenixLib = {}
 PhoenixLib.__index = PhoenixLib
 
@@ -11,19 +12,18 @@ local player = Players.LocalPlayer
 function PhoenixLib:CreateWindow(name)
     local self = setmetatable({}, PhoenixLib)
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "PhoenixProjectX24_Final"
+    ScreenGui.Name = "Phoenix_X24_Final"
     ScreenGui.ResetOnSpawn = false
     pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
     if not ScreenGui.Parent then ScreenGui.Parent = player:WaitForChild("PlayerGui") end
     self.ScreenGui = ScreenGui
 
-    -- [[ 1. ปรับพื้นหลังให้จางมองทะลุได้ (เทาจาง) ]]
     local Main = Instance.new("Frame")
     Main.Name = "MainWindow"
     Main.Size = UDim2.new(0, 560, 0, 390)
     Main.Position = UDim2.new(0.5, -280, 0.5, -195)
-    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 30) -- สีเทาเข้ม
-    Main.BackgroundTransparency = 0.3 -- ค่าความจางที่ทำให้มองทะลุได้นิดนึงแบบพรีเมียม
+    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    Main.BackgroundTransparency = 0.35
     Main.BorderSizePixel = 0
     Main.Visible = false
     Main.Parent = ScreenGui
@@ -31,7 +31,6 @@ function PhoenixLib:CreateWindow(name)
 
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
-    -- [[ RGB Border (ขอบไฟวิ่ง) ]]
     local Stroke = Instance.new("UIStroke")
     Stroke.Thickness = 3
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -52,7 +51,6 @@ function PhoenixLib:CreateWindow(name)
     TabBar.Position = UDim2.new(0, 12, 0, 50)
     TabBar.BackgroundTransparency = 1
     TabBar.Parent = Main
-    
     Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 7)
 
     local ContainerHolder = Instance.new("Frame")
@@ -95,10 +93,7 @@ function PhoenixLib:CreateTab(name)
     Page.ScrollBarThickness = 3
     Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
     Page.Parent = self.ContainerHolder
-    
-    local PageList = Instance.new("UIListLayout", Page)
-    PageList.Padding = UDim.new(0, 10)
-    PageList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
 
     TabBtn.MouseButton1Click:Connect(function()
         for _,v in pairs(self.Tabs) do 
@@ -150,7 +145,7 @@ function PhoenixLib:CreateTab(name)
     return TabObj
 end
 
--- [[ 2. ฟังก์ชันครบ 100% จาก Beta-T&D ]]
+-- [[ LOGIC SETUP ]]
 local state = { noclip = false, god = false, esp = false, infiniteJump = false }
 local UI = PhoenixLib:CreateWindow("T&D Phoenix A")
 
@@ -159,7 +154,7 @@ local OthersTab = UI:CreateTab("Others (อื่นๆ)")
 local DevTab = UI:CreateTab("Dev Tools")
 local UpdateTab = UI:CreateTab("Updates")
 
--- MAIN TAB
+-- [ MAIN TAB ]
 MainTab:CreateToggle("Speed Hack (พลัง XD)", function(v)
     local h = player.Character and player.Character:FindFirstChild("Humanoid")
     if h then h.WalkSpeed = v and 100 or 16 end
@@ -191,7 +186,7 @@ MainTab:CreateToggle("ESP (มองทะลุตัวละคร)", functio
     end
 end)
 
-MainTab:CreateToggle("God Mode (เลือดไม่ลด)", function(v) state.god = v end)
+MainTab:CreateToggle("God Mode", function(v) state.god = v end)
 RunService.Heartbeat:Connect(function()
     if state.god and player.Character then
         local h = player.Character:FindFirstChild("Humanoid")
@@ -207,9 +202,14 @@ UIS.JumpRequest:Connect(function()
     end
 end)
 
--- OTHERS TAB (Fix Scripts)
-OthersTab:CreateButton("Fly (บิน) - Legend Script", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/T%26D.lua"))()
+-- [ OTHERS TAB ]
+-- ปุ่มใหม่ที่คุณต้องการ!
+OthersTab:CreateButton("T&D Phoenix A (Rayfield Mode)", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/Beta-T%26D.lua"))()
+end)
+
+OthersTab:CreateButton("Fly (บิน) - Fixed Mode", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyScript/main/Script.lua"))()
 end)
 
 OthersTab:CreateButton("IY (Infinite Yield)", function()
@@ -226,7 +226,7 @@ end)
 
 OthersTab:CreateButton("Destroy UI", function() UI.ScreenGui:Destroy() end)
 
--- DEV TOOLS
+-- [ DEV TOOLS ]
 DevTab:CreateButton("Run Secure Dex", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
 end)
@@ -235,16 +235,15 @@ DevTab:CreateButton("Run SimpleSpy", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/exxtremestuffs/SimpleSpySource/master/SimpleSpy.lua"))()
 end)
 
--- UPDATES
-UpdateTab:CreateButton("Version: 2.0 (Fortress XD)", function() end)
-UpdateTab:CreateButton("Status: Secured & NoKey", function() end)
+-- [ UPDATES ]
+UpdateTab:CreateButton("Version: 2.2 (Dual-Mode)", function() end)
+UpdateTab:CreateButton("Status: Secured", function() end)
 
--- [[ INTRO: BLACK HOLE EFFECT ]]
+-- [[ INTRO: BLACK HOLE ]]
 local IntroFrame = Instance.new("Frame", UI.ScreenGui)
 IntroFrame.Size = UDim2.new(1,0,1,0)
 IntroFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 IntroFrame.ZIndex = 100
-
 local Logo = Instance.new("ImageLabel", IntroFrame)
 Logo.Size = UDim2.new(0,0,0,0)
 Logo.Position = UDim2.new(0.5,0,0.5,0)
@@ -256,11 +255,9 @@ Logo.ZIndex = 101
 task.spawn(function()
     TweenService:Create(Logo, TweenInfo.new(1.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 300, 0, 300)}):Play()
     task.wait(2.5)
-    
     local suckInfo = TweenInfo.new(1, Enum.EasingStyle.Back, Enum.EasingDirection.In)
     TweenService:Create(Logo, suckInfo, {Size = UDim2.new(0, 0, 0, 0), Rotation = 360}):Play()
     TweenService:Create(IntroFrame, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
-    
     task.wait(1)
     UI.Main.Visible = true
     IntroFrame:Destroy()
