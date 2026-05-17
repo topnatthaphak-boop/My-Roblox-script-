@@ -1,4 +1,4 @@
--- [[ T&D Phoenix A: Final Edition with Dual-Mode Support ]]
+-- [[ T&D Phoenix A: Final Edition (Script Link Updated) ]]
 local PhoenixLib = {}
 PhoenixLib.__index = PhoenixLib
 
@@ -203,9 +203,9 @@ UIS.JumpRequest:Connect(function()
 end)
 
 -- [ OTHERS TAB ]
--- ปุ่มใหม่ที่คุณต้องการ!
-OthersTab:CreateButton("T&D Phoenix A (Rayfield Mode)", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/Beta-T%26D.lua"))()
+-- อัปเดต Link เป็นตัวหลัก T&D.lua ตามสั่งครับ
+OthersTab:CreateButton("T&D Phoenix A (Main Script)", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/T%26D.lua"))()
 end)
 
 OthersTab:CreateButton("Fly (บิน) - Fixed Mode", function()
@@ -236,7 +236,7 @@ DevTab:CreateButton("Run SimpleSpy", function()
 end)
 
 -- [ UPDATES ]
-UpdateTab:CreateButton("Version: 2.2 (Dual-Mode)", function() end)
+UpdateTab:CreateButton("Version: 2.3 (Link Update)", function() end)
 UpdateTab:CreateButton("Status: Secured", function() end)
 
 -- [[ INTRO: BLACK HOLE ]]
