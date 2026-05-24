@@ -114,7 +114,7 @@ BarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 BarFill.BorderSizePixel = 0
 BarFill.Parent = BarBack
 
--- 7. Logic การทำงาน (เมื่อโหลดเสร็จ ปุ่ม P, L และเพลงจะยังอยู่)
+-- 7. Logic การทำงาน (เมื่อโหลดเสร็จจะรัน NewBeta.lua แทน)
 task.spawn(function()
     local fastInfo = TweenInfo.new(1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     TweenService:Create(Title, fastInfo, {TextTransparency = 0}):Play()
@@ -141,6 +141,6 @@ task.spawn(function()
     ControlFrame.Parent = ScreenGui
     Background:Destroy()
     
-    -- รันสคริปต์หลัก
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/T%26D.lua"))()
+    -- รันสคริปต์หลัก (เปลี่ยนเป็น NewBeta ตามสั่ง)
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/NewBeta.lua"))()
 end)
