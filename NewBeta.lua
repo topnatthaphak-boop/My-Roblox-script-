@@ -10,6 +10,7 @@ local Window = Rayfield:CreateWindow({
 -- [ สร้างแท็บทั้งหมด ] --
 local Tab = Window:CreateTab("Main (หลัก)")
 local PlayerTab = Window:CreateTab("Player (ผู้เล่น)")
+local SpecialTab = Window:CreateTab("Phoenix Special (พิเศษ)") -- แท็บใหม่สำหรับ 14 ฟังก์ชัน
 local VisualTab = Window:CreateTab("Visual (การมองเห็น)")
 local TrollTab = Window:CreateTab("Troll (เกรียน)")
 local OthersTab = Window:CreateTab("Others (อื่นๆ)")
@@ -22,11 +23,15 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 
 local function char() return player.Character or player.CharacterAdded:Wait() end
 local function hum() local c = char() return c and c:FindFirstChild("Humanoid") end
+local function root() local c = char() return c and c:FindFirstChild("HumanoidRootPart") end
+
 local state = { noclip = false }
 local targetPlaceId = 0
 local targetPlayer = ""
@@ -169,6 +174,120 @@ PlayerTab:CreateButton({
     end
 })
 
+-- [ PHOENIX SPECIAL - รวม 14 โค้ดใหม่ (แปลไทย) ] --
+SpecialTab:CreateSection("ระบบเคลื่อนที่ & พลัง")
+
+SpecialTab:CreateButton({
+    Name = "🛸 Air Dash (พุ่งตัวกลางอากาศ)",
+    Callback = function()
+        local bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(999999,999999,999999)
+        bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * 120
+        bv.Parent = root()
+        game.Debris:AddItem(bv, 0.25)
+    end
+})
+
+local wallClimbOn = false
+SpecialTab:CreateToggle({
+    Name = "🕷️ Wall Climb (ไต่กำแพง)",
+    CurrentValue = false,
+    Callback = function(v)
+        wallClimbOn = v
+        task.spawn(function()
+            while wallClimbOn do
+                local ray = Ray.new(root().Position, root().CFrame.LookVector * 3)
+                local hit = workspace:FindPartOnRay(ray, char())
+                if hit then root().Velocity = Vector3.new(root().Velocity.X, 50, root().Velocity.Z) end
+                task.wait()
+            end
+        end)
+    end
+})
+
+local spiderWalkOn = false
+SpecialTab:CreateToggle({
+    Name = "🕸️ Spider Walk (เดินบนกำแพง)",
+    CurrentValue = false,
+    Callback = function(v)
+        spiderWalkOn = v
+        task.spawn(function()
+            while spiderWalkOn do
+                local rc = workspace:Raycast(root().Position, Vector3.new(0,-5,0))
+                if rc then root().CFrame = CFrame.lookAt(root().Position, root().Position + workspace.CurrentCamera.CFrame.LookVector, rc.Normal) end
+                task.wait()
+            end
+        end)
+    end
+})
+
+SpecialTab:CreateToggle({
+    Name = "🌌 Reverse Gravity (กลับแรงโน้มถ่วง)",
+    CurrentValue = false,
+    Callback = function(v) workspace.Gravity = v and -50 or 196.2 end
+})
+
+SpecialTab:CreateButton({
+    Name = "🥷 TP Behind Player (วาร์ปไปหลังผู้เล่นเป้าหมาย)",
+    Callback = function()
+        local t = Players:FindFirstChild(targetPlayer)
+        if t and t.Character then root().CFrame = t.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,5) end
+    end
+})
+
+SpecialTab:CreateButton({
+    Name = "👥 Ghost Clone Army (สร้างกองทัพเลียนแบบ)",
+    Callback = function()
+        for i = 1, 10 do
+            char().Archivable = true
+            local clone = char():Clone()
+            clone.Parent = workspace
+            clone:SetPrimaryPartCFrame(root().CFrame * CFrame.new(math.random(-15,15), 0, math.random(-15,15)))
+            for _,v in pairs(clone:GetDescendants()) do if v:IsA("BasePart") then v.Transparency = 0.5 v.Material = Enum.Material.Neon end end
+            game.Debris:AddItem(clone, 5)
+        end
+    end
+})
+
+SpecialTab:CreateButton({
+    Name = "🔥 Phoenix Transform (แปลงร่างฟีนิกซ์)",
+    Callback = function()
+        hum().WalkSpeed = 60
+        local f = Instance.new("Fire", root()) f.Size = 15
+        local l = Instance.new("PointLight", root()) l.Range = 20 l.Brightness = 5
+        workspace.CurrentCamera.FieldOfView = 110
+    end
+})
+
+SpecialTab:CreateToggle({
+    Name = "⏳ Time Stop (หยุดเวลาโลก)",
+    CurrentValue = false,
+    Callback = function(v)
+        for _,p in pairs(workspace:GetDescendants()) do if p:IsA("BasePart") and not p:IsDescendantOf(char()) then p.Anchored = v end end
+        Lighting.ClockTime = v and 0 or 14
+    end
+})
+
+SpecialTab:CreateButton({
+    Name = "🌀 Create Portal (สร้างประตูมิติ)",
+    Callback = function()
+        local p = Instance.new("Part", workspace) p.Shape = "Cylinder" p.Size = Vector3.new(1,10,10) p.Anchored = true p.CanCollide = false p.Material = "Neon" p.Color = Color3.fromRGB(0,255,255)
+        p.CFrame = root().CFrame * CFrame.new(0,0,-10) * CFrame.Angles(0,0,math.rad(90))
+        p.Touched:Connect(function(h) if h.Parent:FindFirstChild("HumanoidRootPart") then h.Parent.HumanoidRootPart.CFrame = root().CFrame * CFrame.new(0,0,20) end end)
+    end
+})
+
+SpecialTab:CreateSection("ระบบช่วยเหลือ & กลั่นแกล้ง")
+
+SpecialTab:CreateButton({ Name = "🧠 Detect Admins (ตรวจจับแอดมิน)", Callback = function() for _,p in pairs(Players:GetPlayers()) do if p:GetRankInGroup(game.CreatorId) >= 200 then Rayfield:Notify({Title="ADMIN DETECTED", Content=p.Name, Duration=5}) end end end })
+SpecialTab:CreateButton({ Name = "🧲 Auto Collect Tools (ดูดของอัตโนมัติ)", Callback = function() for _,v in pairs(workspace:GetDescendants()) do if v:IsA("Tool") and v:FindFirstChild("Handle") then firetouchinterest(root(), v.Handle, 0) firetouchinterest(root(), v.Handle, 1) end end end })
+SpecialTab:CreateToggle({ Name = "🌑 Corrupted Mode (โหมดมืดดำ)", CurrentValue = false, Callback = function(v) Lighting.ClockTime = v and 0 or 14 if v then local c = Instance.new("ColorCorrectionEffect", Lighting) c.Name = "Corrupt" c.TintColor = Color3.new(1,0,0) c.Saturation = -1 else if Lighting:FindFirstChild("Corrupt") then Lighting.Corrupt:Destroy() end end end })
+SpecialTab:CreateButton({ Name = "☠️ Fake Ban Screen (แกล้งโดนแบน)", Callback = function() 
+    local gui = Instance.new("ScreenGui", game.CoreGui)
+    local frame = Instance.new("Frame", gui) frame.Size = UDim2.new(1,0,1,0) frame.BackgroundColor3 = Color3.new(0,0,0)
+    local txt = Instance.new("TextLabel", frame) txt.Size = UDim2.new(1,0,0,100) txt.Position = UDim2.new(0,0,0.4,0) txt.BackgroundTransparency = 1 txt.TextScaled = true txt.Font = "GothamBold" txt.TextColor3 = Color3.new(1,0,0) txt.Text = "Your account has been terminated.\nReason: Exploiting Detected\nError Code: 267"
+end })
+
 -- [ VISUAL TAB ] --
 VisualTab:CreateButton({
     Name = "☀️ FullBright (เพิ่มความสว่าง/ปิดเงา)",
@@ -261,23 +380,21 @@ TrollTab:CreateButton({
     Callback = function() char().HumanoidRootPart.CFrame *= CFrame.Angles(math.rad(90), 0, 0) end
 })
 
-local spinning = false
 TrollTab:CreateToggle({
     Name = "🌀 Spin Bot (ตัวหมุน)",
     CurrentValue = false,
     Callback = function(v)
-        spinning = v
-        while spinning do RunService.RenderStepped:Wait() char().HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(20), 0) end
+        _G.spinning = v
+        while _G.spinning do RunService.RenderStepped:Wait() char().HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(20), 0) end
     end
 })
 
-local fakelag = false
 TrollTab:CreateToggle({
     Name = "📶 Fake Lag (ทำให้คนอื่นเห็นเรารันแลค)",
     CurrentValue = false,
     Callback = function(v)
-        fakelag = v
-        while fakelag do task.wait(0.3) char().HumanoidRootPart.Anchored = true task.wait(0.1) char().HumanoidRootPart.Anchored = false end
+        _G.fakelag = v
+        while _G.fakelag do task.wait(0.3) char().HumanoidRootPart.Anchored = true task.wait(0.1) char().HumanoidRootPart.Anchored = false end
     end
 })
 
@@ -289,13 +406,12 @@ TrollTab:CreateButton({
     end
 })
 
-local orbiting = false
 TrollTab:CreateToggle({
     Name = "🛸 Orbit Player (บินวนรอบเป้าหมาย)",
     CurrentValue = false,
     Callback = function(v)
-        orbiting = v local angle = 0
-        while orbiting do
+        _G.orbiting = v local angle = 0
+        while _G.orbiting do
             task.wait() local t = Players:FindFirstChild(targetPlayer)
             if t and t.Character then
                 angle += 0.1
@@ -316,7 +432,7 @@ OthersTab:CreateSection("สคริปต์เสริมอื่นๆ")
 OthersTab:CreateButton({ Name = "🛸 T&D V5.3 Pro (Fly & Sync)", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/T%26D.lua"))() end })
 OthersTab:CreateButton({ Name = "🔨 F3X Tool", Callback = function() pcall(function() loadstring(game:GetObjects("rbxassetid://6695644299")[1].Source)() end) end })
 OthersTab:CreateButton({ Name = "♾️ IY (Infinite Yield)", Callback = function() loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-IY-InfiniteYield-137097"))() end })
-OthersTab:CreateButton({ Name = "🏙️ Hexagon Brookhaven", Callback = function() loadstring(game:HttpGet('https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/main/0Hexagon'))() end })
+OthersTab:CreateButton({ Name = "🏙️ Hexagon Brookhaven", Callback = function() loadstring(game:HttpGet('https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/main/0Hexagon')) end })
 OthersTab:CreateButton({ Name = "👑 Hack Lord (1x1x1x1)", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Atreous-Scripts/Hacklord/main/Hacklord.lua"))() end })
 
 -- [ UTILITY TAB ] --
@@ -337,8 +453,15 @@ WorldTab:CreateButton({ Name = "🗑️ Destroy Textures", Callback = function()
 
 -- [ DEV & UPDATE ] --
 DevTab:CreateButton({ Name = "Run Dex + SimpleSpy", Callback = function() pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-SECURE-DEX-AND-REMOTE-SPY-205256"))() end) pcall(function() loadstring(game:HttpGet("https://github.com/exxtremestuffs/SimpleSpySource/raw/master/SimpleSpy.lua"))() end) end })
-UpdateTab:CreateLabel("Version: 4.0 (Super Hub Update)")
+UpdateTab:CreateLabel("Version: 5.0 (Ultimate Full Update)")
 UpdateTab:CreateLabel("Developer: topnatthaphak-boop")
+
+-- [ AUTO ESCAPE VOID ] --
+local LastSafePosition = root().Position
+RunService.Heartbeat:Connect(function()
+    if root().Position.Y > 0 then LastSafePosition = root().Position end
+    if root().Position.Y < -30 then root().CFrame = CFrame.new(LastSafePosition + Vector3.new(0,5,0)) end
+end)
 
 RunService.Stepped:Connect(function() if state.noclip then for _,v in pairs(char():GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end end end)
 Rayfield:LoadConfiguration()
