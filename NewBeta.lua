@@ -20,6 +20,8 @@ local function hum() local c = char() return c and c:FindFirstChild("Humanoid") 
 local state = { noclip = false }
 local targetPlaceId = 0
 local targetPlayer = ""
+local songId = "" -- ตัวแปรเก็บ ID เพลง
+local currentSound = nil -- ตัวแปรเก็บ Object เสียง
 
 local function getPlayerNames()
     local names = {}
@@ -300,6 +302,50 @@ TrollTab:CreateToggle({
 
 -- [ 5. แท็บอื่นๆ (Others) ] --
 local OthersTab = Window:CreateTab("อื่นๆ (Others)")
+
+-- เพิ่มระบบเล่นเพลง ID (ฟังก์ชันใหม่)
+OthersTab:CreateSection("🎵 ระบบเครื่องเล่นเพลง (Music Player)")
+
+OthersTab:CreateInput({
+    Name = "ใส่ ID เพลง (Song ID)",
+    PlaceholderText = "วาง ID เพลงที่นี่...",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        songId = Text
+    end,
+})
+
+OthersTab:CreateButton({
+    Name = "▶️ เล่น ID เพลง",
+    Callback = function()
+        if currentSound then
+            currentSound:Stop()
+            currentSound:Destroy()
+        end
+        if songId ~= "" then
+            currentSound = Instance.new("Sound")
+            currentSound.Parent = game:GetService("SoundService")
+            currentSound.SoundId = "rbxassetid://" .. songId
+            currentSound.Volume = 2
+            currentSound:Play()
+            Rayfield:Notify({Title = "เล่นเพลง", Content = "กำลังเล่นเพลง ID: "..songId, Duration = 3})
+        else
+            Rayfield:Notify({Title = "แจ้งเตือน", Content = "กรุณาใส่ ID เพลงก่อน", Duration = 3})
+        end
+    end
+})
+
+OthersTab:CreateButton({
+    Name = "⏹️ หยุดเล่นเพลง",
+    Callback = function()
+        if currentSound then
+            currentSound:Stop()
+            currentSound:Destroy()
+            currentSound = nil
+        end
+    end
+})
+
 OthersTab:CreateSection("วาร์ปข้ามแมพ")
 OthersTab:CreateButton({ Name = "📋 ก๊อป ID แมพ", Callback = function() setclipboard(tostring(game.PlaceId)) end })
 OthersTab:CreateInput({ Name = "ใส่ ID แมพ", PlaceholderText = "วางที่นี่...", Callback = function(T) targetPlaceId = tonumber(T) end })
