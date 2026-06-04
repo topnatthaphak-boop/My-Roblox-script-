@@ -1,6 +1,7 @@
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 -- 1. สร้างหน้ากากหลัก
 local ScreenGui = Instance.new("ScreenGui")
@@ -45,10 +46,10 @@ BackgroundMusic.Volume = 0.5
 BackgroundMusic.Parent = Background
 BackgroundMusic:Play()
 
--- 5. ปุ่มควบคุมเพลง (P และ L)
+-- 5. ปุ่มควบคุมเพลง + ปุ่มใหม่ W (เรียงลำดับ: P | L | W)
 local ControlFrame = Instance.new("Frame")
-ControlFrame.Size = UDim2.new(0, 100, 0, 40)
-ControlFrame.Position = UDim2.new(1, -110, 0, 10) -- มุมขวาบน
+ControlFrame.Size = UDim2.new(0, 150, 0, 40) -- ขยายขนาดเพิ่มเพราะมีปุ่ม W
+ControlFrame.Position = UDim2.new(1, -160, 0, 10) -- ขยับตำแหน่งให้อยู่ตรงมุมพอดี
 ControlFrame.BackgroundTransparency = 1
 ControlFrame.Parent = ScreenGui
 
@@ -76,9 +77,13 @@ local function CreateMusicButton(name, text, pos, color)
     return btn
 end
 
+-- ปุ่มเดิมคงเดิมเป๊ะ
 local StopBtn = CreateMusicButton("StopBtn", "P", UDim2.new(0, 0, 0, 0), Color3.fromRGB(255, 85, 85))
 local PlayBtn = CreateMusicButton("PlayBtn", "L", UDim2.new(0, 50, 0, 0), Color3.fromRGB(85, 255, 85))
+-- ✅ ปุ่มใหม่ W (วางต่อจาก L เลย)
+local WBtn = CreateMusicButton("WBtn", "W", UDim2.new(0, 100, 0, 0), Color3.fromRGB(255, 255, 85))
 
+-- ฟังก์ชันปุ่มเดิม
 StopBtn.MouseButton1Click:Connect(function()
     BackgroundMusic:Stop()
 end)
@@ -87,6 +92,11 @@ PlayBtn.MouseButton1Click:Connect(function()
     if not BackgroundMusic.IsPlaying then
         BackgroundMusic:Play()
     end
+end)
+
+-- ✅ ฟังก์ชันปุ่ม W: กดแล้วรัน Project-wc32bd?.lua
+WBtn.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/Project-wc32bd%3F.lua"))()
 end)
 
 -- 6. ชื่อและแถบโหลด
@@ -114,7 +124,7 @@ BarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 BarFill.BorderSizePixel = 0
 BarFill.Parent = BarBack
 
--- 7. Logic การทำงาน (เมื่อโหลดเสร็จจะรัน NewBeta.lua แทน)
+-- 7. Logic การทำงาน (เหมือนเดิมเป๊ะ เพียงเพิ่มปุ่ม W เข้ามาในระบบ)
 task.spawn(function()
     local fastInfo = TweenInfo.new(1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     TweenService:Create(Title, fastInfo, {TextTransparency = 0}):Play()
@@ -136,11 +146,11 @@ task.spawn(function()
     
     task.wait(1.5)
     
-    -- ย้าย Sound และ ปุ่มไปที่ ScreenGui โดยตรงก่อนลบ Background
+    -- ย้าย Sound และ ปุ่มทั้งหมด (P, L, W) ไปที่ ScreenGui ก่อนลบพื้นหลัง
     BackgroundMusic.Parent = ScreenGui
     ControlFrame.Parent = ScreenGui
     Background:Destroy()
     
-    -- รันสคริปต์หลัก (เปลี่ยนเป็น NewBeta ตามสั่ง)
+    -- รันสคริปต์หลัก NewBeta.lua เหมือนเดิม
     loadstring(game:HttpGet("https://raw.githubusercontent.com/topnatthaphak-boop/My-Roblox-script-/refs/heads/main/NewBeta.lua"))()
 end)
